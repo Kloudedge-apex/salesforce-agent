@@ -7,7 +7,7 @@ import openai
 # Configure the Azure OpenAI service using environment variables.
 openai.api_type = "azure"
 openai.api_base = os.environ.get("AZURE_OPENAI_ENDPOINT")  # e.g., "https://<your-resource-name>.openai.azure.com/"
-openai.api_version = "2023-03-15-preview"  # Adjust this version if necessary
+openai.api_version = "turbo-2024-04-09"  # Adjust this version if necessary
 openai.api_key = os.environ.get("AZURE_OPENAI_KEY")
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
