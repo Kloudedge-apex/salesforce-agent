@@ -41,7 +41,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         response = openai.ChatCompletion.create(
             engine=deployment_name,
             messages=messages,
-            max_tokens=150,
+            max_tokens=150000,
             temperature=0.7,
             top_p=1.0
         )
