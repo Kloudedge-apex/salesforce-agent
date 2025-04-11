@@ -7,8 +7,8 @@ import openai
 # Configure Azure OpenAI using environment variables.
 # These variables should be set in your Azure Function App's Application Settings.
 openai.api_type = "azure"
-openai.api_base = os.environ.get("AZURE_OPENAI_ENDPOINT", "https://<your-default-endpoint>.openai.azure.com/")
-openai.api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "turbo-2024-04-09")
+openai.api_base = os.environ.get("AZURE_OPENAI_ENDPOINT", "https://https://salesforce-open-ai-agent.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2025-01-01-preview")
+openai.api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
 openai.api_key = os.environ.get("AZURE_OPENAI_KEY", "")
 
 # Get the deployment name (must match the name you used in Azure OpenAI)
