@@ -43,7 +43,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
         response = client.complete({
             "messages": messages,
-            "max_tokens": 300,
+            "max_tokens": 300000,
             "temperature": 0.7,
             "top_p": 1.0,
             "stop": []
