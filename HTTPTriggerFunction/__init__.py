@@ -2,69 +2,60 @@ import logging
 import os
 import json
 import azure.functions as func
-import openai
+from azure.ai.inference import ChatCompletionsClient
+from azure.core.credentials import AzureKeyCredential
 
-# Configure Azure OpenAI using environment variables.
-# These variables should be set in your Azure Function App's Application Settings.
-openai.api_type = "azure"
-openai.api_base = os.environ.get("AZURE_OPENAI_ENDPOINT", "https://https://salesforce-open-ai-agent.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2025-01-01-preview")
-openai.api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
-openai.api_key = os.environ.get("AZURE_OPENAI_KEY", "")
+# Get credentials and endpoint from environment
+api_key = os.environ.get("AZURE_INFERENCE_CREDENTIAL")
+endpoint = os.environ.get("AZURE_OPENAI_DEPLOYMENT_ENDPOINT")  # Full endpoint including /deployments/<deployment-name>
 
-# Get the deployment name (must match the name you used in Azure OpenAI)
-deployment_name = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
+if not api_key or not endpoint:
+    raise ValueError("Both AZURE_INFERENCE_CREDENTIAL and AZURE_OPENAI_DEPLOYMENT_ENDPOINT must be set.")
+
+# Initialize Azure ChatCompletionsClient
+client = ChatCompletionsClient(endpoint=endpoint, credential=AzureKeyCredential(api_key))
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info("Processing HTTP request for email draft generation.")
+    logging.info("Received request to generate an email draft.")
 
-    # Parse the incoming request for JSON payload.
     try:
-        req_body = req.get_json()
+        req_body: dict = req.get_json()
     except ValueError:
-        logging.error("Invalid JSON payload received.")
+        logging.warning("Invalid JSON payload received.")
         return func.HttpResponse("Invalid JSON payload.", status_code=400)
 
-    # Get the first name from the request, defaulting to 'Valued Customer' if not provided.
     first_name = req_body.get("firstName", "Valued Customer")
 
-    # Construct the conversation for chat-based completions.
     messages = [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": (
-            f"Compose a professional email addressed to {first_name} "
-            "thanking them for their interest and inviting them to schedule a meeting."
-        )}
+        {
+            "role": "system",
+            "content": "You are a helpful assistant."
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Compose a professional email addressed to {first_name}, thanking them for their interest and inviting "
+                "them to schedule a meeting for further discussion. Maintain a friendly yet professional tone."
+            )
+        }
     ]
 
     try:
-        # Call the Chat Completion API using your deployment from Azure OpenAI.
-        response = openai.ChatCompletion.create(
-            engine=deployment_name,
-            messages=messages,
-            max_tokens=150000,
-            temperature=0.7,
-            top_p=1.0
-        )
-        # Extract the email draft from the response.
+        response = client.complete({
+            "messages": messages,
+            "max_tokens": 300,
+            "temperature": 0.7,
+            "top_p": 1.0,
+            "stop": []
+        })
         email_draft = response.choices[0].message.content.strip()
-        logging.info("Email draft generated successfully.")
+        logging.info("Successfully generated email draft.")
     except Exception as e:
-        # Log and return an error response in case of failure.
-        logging.error(f"Error generating email from OpenAI: {str(e)}")
-        error_response = {
-            "error": "Error generating email",
-            "details": str(e)
-        }
-        return func.HttpResponse(
-            json.dumps(error_response),
-            status_code=500,
-            mimetype="application/json"
-        )
+        logging.error("Error generating email draft.", exc_info=True)
+        return func.HttpResponse("Internal server error while generating email.", status_code=500)
 
-    # Return the generated email draft as a JSON response.
-    result = {"emailDraft": email_draft}
     return func.HttpResponse(
-        json.dumps(result),
-        status_code=200,
-        mimetype="application/json"
+        json.dumps({"emailDraft": email_draft}),
+        mimetype="application/json",
+        status_code=200
     )
